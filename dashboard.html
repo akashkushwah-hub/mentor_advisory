@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Academic Advisory & Mentor System</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 25px; }
+        .search-box { display: flex; gap: 10px; margin-bottom: 15px; }
+        .search-box input[type="text"] { flex: 1; padding: 10px 14px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .btn-search { background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-clear { background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 6px; text-decoration: none; font-size: 14px; line-height: 20px; }
+        .metrics-grid { display: flex; gap: 15px; margin-bottom: 10px; }
+        .metric-box { flex: 1; background: #eef2f7; padding: 12px; border-radius: 6px; text-align: center; }
+        .metric-box h3 { margin: 0; color: #555; font-size: 12px; }
+        .metric-box p { margin: 4px 0 0; font-size: 18px; font-weight: bold; color: #111; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #ddd; font-size: 14px; }
+        th { background-color: #f8f9fa; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+        .badge-CRITICAL { background-color: #dc3545; color: white; }
+        .badge-HIGH { background-color: #fd7e14; color: white; }
+        .badge-MEDIUM { background-color: #ffc107; color: black; }
+        .badge-LOW { background-color: #17a2b8; color: white; }
+        .badge-NONE { background-color: #28a745; color: white; }
+        .btn-assign { background-color: #007bff; color: white; padding: 5px 10px; text-decoration: none; border-radius: 4px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Batch Mentor Support & Academic Advisory System</h1>
+
+        <!-- Cohort Analytics -->
+        <div class="card">
+            <h2>Cohort Analytics (Batch: {{ analytics.get('batch_id', 'N/A') }})</h2>
+            <div class="metrics-grid">
+                <div class="metric-box">
+                    <h3>Total Batch Size</h3>
+                    <p>{{ analytics.get('total_students', 0) }} Students</p>
+                </div>
+                <div class="metric-box">
+                    <h3>Avg Attendance</h3>
+                    <p>{{ analytics.get('avg_attendance', 'N/A') }}</p>
+                </div>
+                <div class="metric-box">
+                    <h3>Avg Exam Score</h3>
+                    <p>{{ analytics.get('avg_score', 'N/A') }}</p>
+                </div>
+                <div class="metric-box">
+                    <h3>At-Risk Ratio</h3>
+                    <p>{{ analytics.get('at_risk_ratio', 'N/A') }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Search & Health Panel -->
+        <div class="card">
+            <h2>Student Health & Search Panel</h2>
+            
+            <form method="GET" action="/" class="search-box">
+                <input type="text" name="search" placeholder="Search by Student ID (e.g., S105), Student Name, or Risk Level..." value="{{ search_query or '' }}">
+                <button type="submit" class="btn-search">Search</button>
+                {% if search_query %}
+                    <a href="/" class="btn-clear">Show All Students</a>
+                {% endif %}
+            </form>
+
+            <p style="color: #666; font-size: 13px;">Displaying <strong>{{ students|length }}</strong> student record(s).</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Attendance</th>
+                        <th>Avg Score</th>
+                        <th>Pending Task</th>
+                        <th>Risk Level</th>
+                        <th>Assigned Professor</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td><strong>{{ student.student_id }}</strong></td>
+                        <td>{{ student.name }}</td>
+                        <td>{{ student.attendance_pct }}%</td>
+                        <td>{{ student.avg_score_pct }}%</td>
+                        <td>{{ student.pending_assignments }}</td>
+                        <td><span class="badge badge-{{ student.risk_level }}">{{ student.risk_level }}</span></td>
+                        <td>{{ student.assigned_mentor.name if student.assigned_mentor else 'Unassigned' }}</td>
+                        <td>
+                            {% if not student.assigned_mentor and student.risk_level in ['HIGH', 'CRITICAL'] %}
+                                <a href="/allocate/{{ student.student_id }}?search={{ search_query or '' }}" class="btn-assign">Auto-Assign Mentor</a>
+                            {% else %}
+                                <span style="color: #888; font-size: 12px;">N/A</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: #777;">No student records found matching your search.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Faculty Workload -->
+        <div class="card">
+            <h2>Faculty Professors Workload</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Professor Name</th>
+                        <th>Specialization Domain</th>
+                        <th>Assigned Students</th>
+                        <th>Max Capacity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mentor in mentors %}
+                    <tr>
+                        <td>{{ mentor.mentor_id }}</td>
+                        <td><strong>{{ mentor.name }}</strong></td>
+                        <td>{{ mentor.specialization }}</td>
+                        <td>{{ mentor.current_students }} students</td>
+                        <td>{{ mentor.max_capacity }} students</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
